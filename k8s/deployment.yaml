@@ -27,11 +27,11 @@ spec:
             httpGet:
               path: /templates
               port: 8080
-            initialDelaySeconds: 90
-            periodSeconds: 10
+            initialDelaySeconds: 5
+            periodSeconds: 5
           readinessProbe:
             httpGet:
               path: /templates
               port: 8080
-            initialDelaySeconds: 90
+            initialDelaySeconds: 5
             periodSeconds: 5
