@@ -20,7 +20,7 @@ func New(client *githubclient.Client) *Service {
 	svc := &Service{client: client}
 	svc.Reload()
 
-	ticker := time.NewTicker(20 * time.Second)
+	ticker := time.NewTicker(3 * time.Minute)
 	go func() {
 		for range ticker.C {
 			svc.Reload()
