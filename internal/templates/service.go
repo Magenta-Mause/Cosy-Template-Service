@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/magenta-mause/cosy-template-service/internal/githubclient"
 	"github.com/magenta-mause/cosy-template-service/internal/models"
@@ -18,6 +19,15 @@ type Service struct {
 func New(client *githubclient.Client) *Service {
 	svc := &Service{client: client}
 	svc.Reload()
+
+	ticker := time.NewTicker(3 * time.Minute)
+	go func() {
+		for range ticker.C {
+			svc.Reload()
+			log.Println("Templates reloaded")
+		}
+	}()
+
 	return svc
 }
 
@@ -25,7 +35,8 @@ func (s *Service) Reload() {
 	ctx := context.Background()
 	ts, err := s.client.FetchTemplates(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Failed to reload templates: %v", err)
+		return
 	}
 	s.mu.Lock()
 	s.templates = ts
@@ -34,6 +45,8 @@ func (s *Service) Reload() {
 
 func (s *Service) GetAll() []*models.Template {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.templates
+	copied := make([]*models.Template, len(s.templates))
+	copy(copied, s.templates)
+	s.mu.RUnlock()
+	return copied
 }

@@ -21,17 +21,18 @@ type Client struct {
 
 func New(cfg *config.Config) *Client {
 	ctx := context.Background()
-	var tc *http.Client
+	var client *http.Client
 	if cfg.Github.Token != "" {
-		ts := oauth2.StaticTokenSource(
+		tokenSource := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: cfg.Github.Token},
 		)
-		tc = oauth2.NewClient(ctx, ts)
+		client = oauth2.NewClient(ctx, tokenSource)
 	} else {
-		tc = oauth2.NewClient(ctx, nil)
+		log.Println("githubclient: no GitHub token provided; using unauthenticated client with reduced rate limits")
+		client = http.DefaultClient
 	}
 
-	return &Client{gh: github.NewClient(tc), cfg: cfg}
+	return &Client{gh: github.NewClient(client), cfg: cfg}
 }
 
 func (c *Client) FetchTemplates(ctx context.Context) ([]*models.Template, error) {
