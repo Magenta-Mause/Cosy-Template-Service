@@ -34,6 +34,7 @@ func (s *Service) Reload() {
 
 func (s *Service) GetAll() []*models.Template {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.templates
+	copied := make([]*models.Template, len(s.templates))
+	copy(copied, s.templates)
+	return copied
 }

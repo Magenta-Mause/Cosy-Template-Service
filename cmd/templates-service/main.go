@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -22,5 +23,5 @@ func main() {
 
 	r := gin.Default()
 	server.RegisterRoutes(r, ts)
-	log.Fatal(r.Run(":8080"))
+	log.Fatal(r.Run(fmt.Sprintf(":%d", cfg.Port)))
 }

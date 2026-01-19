@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	Port   int `mapstructure:"port"`
 	Github struct {
 		Owner string `mapstructure:"owner"`
 		Repo  string `mapstructure:"repo"`
@@ -19,9 +20,12 @@ func Load() *Config {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv() // GITHUB_OWNER etc.
+	viper.BindEnv("github.token", "GITHUB_TOKEN")
 	viper.ReadInConfig() // Optional file
 
 	var cfg Config
-	viper.Unmarshal(&cfg)
+	if err := viper.Unmarshal(&cfg); err != nil {
+		panic(err)
+	}
 	return &cfg
 }
