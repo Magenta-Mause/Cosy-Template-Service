@@ -18,6 +18,7 @@ type ResourceLimit struct {
 type Template struct {
 	Name                   string            `yaml:"name" json:"name"`
 	Description            string            `yaml:"description" json:"description"`
+	Path                   string            `yaml:"path,omitempty" json:"path,omitempty"`
 	Variables              []Variable        `yaml:"variables,omitempty" json:"variables,omitempty"`
 	GameID                 int               `yaml:"game_id" json:"game_id"`
 	DockerImageName        string            `yaml:"docker_image_name" json:"docker_image_name"`

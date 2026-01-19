@@ -72,6 +72,7 @@ func (c *Client) FetchTemplates(ctx context.Context) ([]*models.Template, error)
 			log.Printf("Failed unmarshal %s: %v", path, err)
 			continue
 		}
+		t.Path = path
 		templates = append(templates, &t)
 	}
 	return templates, nil
