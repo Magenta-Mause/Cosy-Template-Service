@@ -22,7 +22,7 @@ type Template struct {
 	GameID                 int               `yaml:"game_id" json:"game_id"`
 	DockerImageName        string            `yaml:"docker_image_name" json:"docker_image_name"`
 	DockerImageTag         string            `yaml:"docker_image_tag" json:"docker_image_tag"`
-	DockerExecutionCommand *string           `yaml:"docker_execution_command,omitempty" json:"docker_execution_command,omitempty"`
+	DockerExecutionCommand []string          `yaml:"docker_execution_command,omitempty" json:"docker_execution_command,omitempty"`
 	EnvironmentVariables   map[string]string `yaml:"environment_variables,omitempty" json:"environment_variables,omitempty"`
 	PortMapping            map[string]any    `yaml:"port_mapping,omitempty" json:"port_mapping,omitempty"`
 	FileMounts             []string          `yaml:"file_mounts,omitempty" json:"file_mounts,omitempty"`
