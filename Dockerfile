@@ -33,4 +33,7 @@ USER nonroot:nonroot
 
 EXPOSE 8080
 
+# Copy config.yaml
+COPY config.yaml .
+
 ENTRYPOINT ["/app/app"]
