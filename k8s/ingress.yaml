@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cosy-template-service
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  rules:
+    - host: cosy-templates.jannekeipert.de
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cosy-template-service
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - cosy-templates.jannekeipert.de
+      secretName: multi-domain-cert

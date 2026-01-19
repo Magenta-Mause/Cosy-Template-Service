@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cosy-template-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cosy-template-service
+  template:
+    metadata:
+      labels:
+        app: cosy-template-service
+    spec:
+      containers:
+        - name: cosy-template-service
+          image: ghcr.io/magenta-mause/cosy-template-service:v1.0.1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cosy-template-service
+                  key: cosy-template-service-github-token
+          livenessProbe:
+            httpGet:
+              path: /templates
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /templates
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 5
