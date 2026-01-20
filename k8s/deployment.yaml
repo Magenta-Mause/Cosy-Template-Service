@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: cosy-template-service
-          image: ghcr.io/magenta-mause/cosy-template-service:v1.0.3
+          image: ghcr.io/magenta-mause/cosy-template-service:v1.0.4
           ports:
             - containerPort: 8080
           env:
