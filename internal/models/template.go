@@ -8,6 +8,7 @@ type Variable struct {
 	Default     any      `yaml:"default,omitempty" json:"default,omitempty"`
 	Options     []string `yaml:"options,omitempty" json:"options,omitempty"`
 	Required    bool     `yaml:"required,omitempty" json:"required,omitempty"`
+	Example     any      `yaml:"example,omitempty" json:"example,omitempty"`
 }
 
 type ResourceLimit struct {
