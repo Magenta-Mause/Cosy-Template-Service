@@ -5,7 +5,7 @@ type Variable struct {
 	Type        string   `yaml:"type" json:"type"`
 	Regex       string   `yaml:"regex,omitempty" json:"regex,omitempty"`
 	Placeholder string   `yaml:"placeholder" json:"placeholder"`
-	Default     any      `yaml:"default,omitempty" json:"default,omitempty"`
+	Default     any      `yaml:"default,omitempty" json:"default_value,omitempty"`
 	Options     []string `yaml:"options,omitempty" json:"options,omitempty"`
 	Required    bool     `yaml:"required,omitempty" json:"required,omitempty"`
 	Example     any      `yaml:"example,omitempty" json:"example,omitempty"`
