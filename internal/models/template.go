@@ -29,4 +29,5 @@ type Template struct {
 	PortMapping            map[string]any    `yaml:"port_mapping,omitempty" json:"port_mapping,omitempty"`
 	FileMounts             []string          `yaml:"file_mounts,omitempty" json:"file_mounts,omitempty"`
 	ResourceLimit          *ResourceLimit    `yaml:"resource_limit,omitempty" json:"resource_limit,omitempty"`
+	Tags                   []string          `yaml:"tags,omitempty" json:"tags,omitempty"`
 }
