@@ -24,6 +24,7 @@ type TemplateV2 struct {
 	PortMapping            map[string]any    `json:"port_mapping,omitempty"`
 	FileMounts             []string          `json:"file_mounts,omitempty"`
 	ResourceLimit          *ResourceLimit    `json:"resource_limit,omitempty"`
+	Tags                   []string          `json:"tags,omitempty"`
 }
 
 func (t *Template) ToV2() TemplateV2 {
@@ -53,5 +54,6 @@ func (t *Template) ToV2() TemplateV2 {
 		PortMapping:            t.PortMapping,
 		FileMounts:             t.FileMounts,
 		ResourceLimit:          t.ResourceLimit,
+		Tags:                   t.Tags,
 	}
 }
