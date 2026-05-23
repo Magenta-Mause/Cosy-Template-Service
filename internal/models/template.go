@@ -9,6 +9,7 @@ type Variable struct {
 	Options     []string `yaml:"options,omitempty" json:"options,omitempty"`
 	Required    bool     `yaml:"required,omitempty" json:"required,omitempty"`
 	Example     any      `yaml:"example,omitempty" json:"example,omitempty"`
+	Description string   `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
 type ResourceLimit struct {
