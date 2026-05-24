@@ -9,6 +9,7 @@ type VariableV2 struct {
 	Options      []string `json:"options,omitempty"`
 	Required     bool     `json:"required,omitempty"`
 	Example      any      `json:"example,omitempty"`
+	Description  string   `json:"description,omitempty"`
 }
 
 type TemplateV2 struct {
@@ -39,6 +40,7 @@ func (t *Template) ToV2() TemplateV2 {
 			Options:      v.Options,
 			Required:     v.Required,
 			Example:      v.Example,
+			Description:  v.Description,
 		}
 	}
 	return TemplateV2{
