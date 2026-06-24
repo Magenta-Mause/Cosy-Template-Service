@@ -3,4 +3,5 @@ github:
   repo: "Cosy-Templates"
   ref: "main"
   path: "templates"
+  gamesPath: "games"
 port: 8080
