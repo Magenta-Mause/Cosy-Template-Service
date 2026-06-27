@@ -303,6 +303,35 @@ host_mounts:
 	}
 }
 
+// Regression: a resource_limit with only one field set must not emit null for
+// the absent field in the v3 wire output.
+func TestPartialResourceLimit_V3NoNull(t *testing.T) {
+	yml := `
+name: Partial
+description: d
+game_id: 38365
+docker_image_name: a/b
+docker_image_tag: latest
+resource_limit:
+  memory: 2GiB
+`
+	var tmpl Template
+	if err := yaml.Unmarshal([]byte(yml), &tmpl); err != nil {
+		t.Fatal(err)
+	}
+	out, _ := json.Marshal(tmpl)
+	s := string(out)
+	if contains(s, "null") {
+		t.Fatalf("partial resource_limit emits null: %s", s)
+	}
+	if !contains(s, `"memory":"2GiB"`) {
+		t.Fatalf("memory missing from v3 output: %s", s)
+	}
+	if contains(s, `"cpu"`) {
+		t.Fatalf("absent cpu should not appear in v3 output: %s", s)
+	}
+}
+
 func TestGame_JSONShape(t *testing.T) {
 	g := Game{Name: "Minecraft", LogoURL: "https://cdn/logo.png", HeroURL: "https://cdn/hero.png", ExternalGameID: intPtr(38365), Slug: "minecraft"}
 	out, _ := json.Marshal(g)

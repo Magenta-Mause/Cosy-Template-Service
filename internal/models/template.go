@@ -18,8 +18,22 @@ type Variable struct {
 // string-or-number scalars so they can carry {{var}} placeholder strings in v3
 // while still round-tripping plain numeric/string values.
 type ResourceLimit struct {
-	Memory StringOrNumber `yaml:"memory,omitempty" json:"memory,omitzero"`
-	CPU    StringOrNumber `yaml:"cpu,omitempty" json:"cpu,omitzero"`
+	Memory StringOrNumber `yaml:"memory,omitempty" json:"memory,omitempty"`
+	CPU    StringOrNumber `yaml:"cpu,omitempty" json:"cpu,omitempty"`
+}
+
+// MarshalJSON emits only the fields that are actually set. The standard
+// encoding/json package does not support the omitzero tag option, so we
+// enforce the omit-if-zero rule here via IsZero() rather than relying on tags.
+func (r ResourceLimit) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	if !r.Memory.IsZero() {
+		m["memory"] = r.Memory.Value()
+	}
+	if !r.CPU.IsZero() {
+		m["cpu"] = r.CPU.Value()
+	}
+	return json.Marshal(m)
 }
 
 // HostMount is a direct host volume bind mount (admin/owner only at runtime).
