@@ -1,6 +1,9 @@
 package models
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 // containsVar reports whether a string carries an unresolved {{var}} template
 // placeholder. v1/v2 use typed fields that cannot hold placeholders, so any
@@ -88,9 +91,15 @@ func resolveGameID(id StringOrNumber, games GamesIndex) *int {
 	case nil:
 		return nil
 	case int64:
+		if v < 0 {
+			return nil
+		}
 		n := int(v)
 		return &n
 	case float64:
+		if v != math.Trunc(v) || v < 0 {
+			return nil
+		}
 		n := int(v)
 		return &n
 	case string:

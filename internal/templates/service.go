@@ -3,6 +3,7 @@ package templates
 import (
 	"context"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -77,7 +78,22 @@ func (s *Service) GetGames() models.GamesIndex {
 	return copied
 }
 
-// GetGamesList returns the games as a slice for the /v3/games endpoint.
+// GetSnapshot returns a consistent snapshot of templates and games under a
+// single read lock, preventing a reload from interleaving between the two
+// reads that v1/v2 handlers need.
+func (s *Service) GetSnapshot() ([]*models.Template, models.GamesIndex) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ts := make([]*models.Template, len(s.templates))
+	copy(ts, s.templates)
+	gs := make(models.GamesIndex, len(s.games))
+	for k, v := range s.games {
+		gs[k] = v
+	}
+	return ts, gs
+}
+
+// GetGamesList returns the games as a slice sorted by slug for the /v3/games endpoint.
 func (s *Service) GetGamesList() []models.Game {
 	s.mu.RLock()
 	copied := make([]models.Game, 0, len(s.games))
@@ -85,5 +101,8 @@ func (s *Service) GetGamesList() []models.Game {
 		copied = append(copied, v)
 	}
 	s.mu.RUnlock()
+	sort.Slice(copied, func(i, j int) bool {
+		return copied[i].Slug < copied[j].Slug
+	})
 	return copied
 }

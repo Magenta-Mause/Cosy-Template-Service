@@ -21,8 +21,7 @@ func RegisterRoutes(r *gin.Engine, ts *templates.Service) {
 // {{var}}-carrying fields are omitted.
 func getTemplatesV1(ts *templates.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		stored := ts.GetAll()
-		games := ts.GetGames()
+		stored, games := ts.GetSnapshot()
 		result := make([]models.TemplateV1, len(stored))
 		for i, t := range stored {
 			result[i] = t.ToV1(games)
@@ -36,8 +35,7 @@ func getTemplatesV1(ts *templates.Service) gin.HandlerFunc {
 // {{var}}-carrying fields are omitted.
 func getTemplatesV2(ts *templates.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		stored := ts.GetAll()
-		games := ts.GetGames()
+		stored, games := ts.GetSnapshot()
 		result := make([]models.TemplateV2, len(stored))
 		for i, t := range stored {
 			result[i] = t.ToV2(games)
