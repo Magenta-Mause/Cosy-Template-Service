@@ -7,11 +7,12 @@ import (
 type Config struct {
 	Port   int `mapstructure:"port"`
 	Github struct {
-		Owner string `mapstructure:"owner"`
-		Repo  string `mapstructure:"repo"`
-		Ref   string `mapstructure:"ref"`  // "main"
-		Path  string `mapstructure:"path"` // "templates"
-		Token string `mapstructure:"token"`
+		Owner     string `mapstructure:"owner"`
+		Repo      string `mapstructure:"repo"`
+		Ref       string `mapstructure:"ref"`       // "main"
+		Path      string `mapstructure:"path"`      // "templates"
+		GamesPath string `mapstructure:"gamesPath"` // "games"
+		Token     string `mapstructure:"token"`
 	}
 }
 
@@ -21,6 +22,7 @@ func Load() *Config {
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv() // GITHUB_OWNER etc.
 	viper.BindEnv("github.token", "GITHUB_TOKEN")
+	viper.SetDefault("github.gamesPath", "games")
 	viper.ReadInConfig() // Optional file
 
 	var cfg Config
