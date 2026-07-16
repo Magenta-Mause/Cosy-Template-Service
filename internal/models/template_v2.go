@@ -12,6 +12,20 @@ func containsVar(s string) bool {
 	return strings.Contains(s, "{{")
 }
 
+// v1/v2 consumers store the description in a varchar(255) column, so those API
+// versions guarantee it never exceeds 255 characters. v3 keeps the raw value.
+const maxDescriptionLenV1 = 255
+
+// truncateDescription caps s at maxDescriptionLenV1 characters (runes), ending
+// with "..." when it was cut.
+func truncateDescription(s string) string {
+	r := []rune(s)
+	if len(r) <= maxDescriptionLenV1 {
+		return s
+	}
+	return string(r[:maxDescriptionLenV1-3]) + "..."
+}
+
 // GamesIndex maps a game slug (games/*.yaml filename without extension) to its
 // definition. It is used to resolve a slug game_id to a numeric external id for
 // v1/v2 output.
@@ -188,7 +202,7 @@ func (t *Template) ToV1(games GamesIndex) TemplateV1 {
 	}
 	return TemplateV1{
 		Name:                   t.Name,
-		Description:            t.Description,
+		Description:            truncateDescription(t.Description),
 		Path:                   t.Path,
 		Variables:              vars,
 		GameID:                 resolveGameID(t.GameID, games),
@@ -222,7 +236,7 @@ func (t *Template) ToV2(games GamesIndex) TemplateV2 {
 	}
 	return TemplateV2{
 		Name:                   t.Name,
-		Description:            t.Description,
+		Description:            truncateDescription(t.Description),
 		Path:                   t.Path,
 		Variables:              vars,
 		GameID:                 resolveGameID(t.GameID, games),

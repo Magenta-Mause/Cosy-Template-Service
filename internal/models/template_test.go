@@ -343,6 +343,82 @@ func TestGame_JSONShape(t *testing.T) {
 	}
 }
 
+// v1/v2 consumers store the description in a varchar(255) column, so a
+// short description must pass through untouched in both versions.
+func TestToV1V2_ShortDescriptionPassthrough(t *testing.T) {
+	desc := strings.Repeat("a", 255)
+	yml := `
+name: Short
+description: ` + desc + `
+game_id: 38365
+docker_image_name: a/b
+docker_image_tag: latest
+`
+	var tmpl Template
+	if err := yaml.Unmarshal([]byte(yml), &tmpl); err != nil {
+		t.Fatal(err)
+	}
+	if got := tmpl.ToV1(minecraftGames()).Description; got != desc {
+		t.Fatalf("v1 description changed: len %d", len([]rune(got)))
+	}
+	if got := tmpl.ToV2(minecraftGames()).Description; got != desc {
+		t.Fatalf("v2 description changed: len %d", len([]rune(got)))
+	}
+}
+
+// A description over 255 chars is truncated to exactly 255 runes ending in
+// "..." in both v1 and v2.
+func TestToV1V2_LongDescriptionTruncated(t *testing.T) {
+	yml := `
+name: Long
+description: ` + strings.Repeat("a", 358) + `
+game_id: 38365
+docker_image_name: a/b
+docker_image_tag: latest
+`
+	var tmpl Template
+	if err := yaml.Unmarshal([]byte(yml), &tmpl); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name string
+		got  string
+	}{
+		{"v1", tmpl.ToV1(minecraftGames()).Description},
+		{"v2", tmpl.ToV2(minecraftGames()).Description},
+	} {
+		if n := len([]rune(tc.got)); n != 255 {
+			t.Fatalf("%s: expected 255 runes, got %d", tc.name, n)
+		}
+		if !strings.HasSuffix(tc.got, "...") {
+			t.Fatalf("%s: expected trailing ..., got %q", tc.name, tc.got)
+		}
+	}
+}
+
+// The 255-rune cap counts runes, not bytes: 300 multi-byte 'ä' runes truncate
+// to exactly 255 runes (252 'ä' + "...").
+func TestToV1V2_MultiByteDescriptionCountedInRunes(t *testing.T) {
+	yml := `
+name: Umlaut
+description: ` + strings.Repeat("ä", 300) + `
+game_id: 38365
+docker_image_name: a/b
+docker_image_tag: latest
+`
+	var tmpl Template
+	if err := yaml.Unmarshal([]byte(yml), &tmpl); err != nil {
+		t.Fatal(err)
+	}
+	got := tmpl.ToV2(minecraftGames()).Description
+	if n := len([]rune(got)); n != 255 {
+		t.Fatalf("expected 255 runes, got %d (bytes %d)", n, len(got))
+	}
+	if want := strings.Repeat("ä", 252) + "..."; got != want {
+		t.Fatalf("unexpected truncation: %q", got)
+	}
+}
+
 func contains(haystack, needle string) bool {
 	return strings.Contains(haystack, needle)
 }
