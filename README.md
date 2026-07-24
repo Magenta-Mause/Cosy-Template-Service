@@ -63,10 +63,10 @@ Clone the repository and build the binary:
 ```bash
 git clone https://github.com/magenta-mause/Cosy-Template-Service.git
 cd Cosy-Template-Service
-go build ./...
+go build -o app ./cmd/templates-service
 ```
 
-Or build a container image:
+This produces an `app` binary in the repo root. Or build a container image:
 
 ```bash
 docker build -t cosy-template-service .
@@ -119,7 +119,7 @@ go run ./cmd/templates-service
 Or run the built binary / container:
 
 ```bash
-./app                                   # binary produced by `go build`
+./app                                   # binary produced by `go build -o app ./cmd/templates-service`
 docker run --rm -p 8080:8080 cosy-template-service
 ```
 
