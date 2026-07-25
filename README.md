@@ -25,8 +25,9 @@ redeploy of the platform.
 
 ### Key features
 
-- **GitHub-backed content** — reads `templates/*.yaml` and `games/*.yaml` from a
-  configurable GitHub repository, branch, and path using the GitHub API.
+- **GitHub-backed content** — reads every `*.yaml` under `templates/` and
+  `games/` (recursively, at any depth) from a configurable GitHub repository,
+  branch, and path using the GitHub API.
 - **Automatic refresh** — reloads templates and games in the background every
   3 minutes, so new commits appear without a restart.
 - **Versioned API** — serves three template shapes (`v1`, `v2`, `v3`) so
@@ -86,8 +87,8 @@ github:
   owner: "Magenta-Mause"      # GitHub org/user that owns the templates repo
   repo: "Cosy-Templates"      # repository holding the template YAML files
   ref: "main"                 # branch, tag, or commit SHA to read from
-  path: "templates"           # directory containing templates/*.yaml
-  gamesPath: "games"          # directory containing games/*.yaml
+  path: "templates"           # path prefix; every *.yaml below it, recursively
+  gamesPath: "games"          # path prefix; every *.yaml below it, recursively
 port: 8080                     # HTTP port the service listens on
 ```
 
@@ -96,6 +97,8 @@ port: 8080                     # HTTP port the service listens on
 | Variable | Required | Description |
 | --- | --- | --- |
 | `GITHUB_TOKEN` | No | GitHub token used to authenticate GitHub API calls. Without it the service uses an unauthenticated client with reduced rate limits. |
+| `PORT` | No | HTTP port to listen on. Overrides the `port` key in `config.yaml` (default `8080`). |
+| `GIN_MODE` | No | Gin's run mode. The binary starts in `debug` mode; set `release` in production to silence per-request debug logging. |
 
 Copy [`.env.example`](./.env.example) to `.env` and fill in a token if you need
 one:
@@ -107,6 +110,11 @@ cp .env.example .env
 > The `github.token` config key is bound to `GITHUB_TOKEN`; keep tokens in the
 > environment (or a Kubernetes secret) rather than in `config.yaml`. The `.env`
 > file is git-ignored.
+>
+> Only top-level config keys can be overridden by environment variables. The
+> nested `github.*` keys (`owner`, `repo`, `ref`, `path`, `gamesPath`) have no
+> usable env equivalent and must be set in `config.yaml` — `github.token` works
+> only because it is explicitly bound.
 
 ### Quick Start
 
@@ -139,11 +147,11 @@ origins (`GET`, `OPTIONS`).
 
 | Method & Path | Description |
 | --- | --- |
-| `GET /templates` | All templates in **v1** shape (alias of `/v1/templates`). Uses `default` as the value key; resolves `game_id` to a numeric external id and omits fields carrying `{{var}}` placeholders. |
+| `GET /templates` | All templates in **v1** shape (alias of `/v1/templates`). Uses `default` as the value key; resolves `game_id` to a numeric external id, omits fields carrying `{{var}}` placeholders, and truncates `description` to 255 characters (cut at 252 plus `...`). |
 | `GET /v1/templates` | Same as `/templates`. |
-| `GET /v2/templates` | All templates in **v2** shape. Like v1 but uses `default_value` as the value key. |
-| `GET /v3/templates` | Raw templates with variables intact (`{{...}}` not resolved) and all newer fields (annotations, host mounts, string-capable resource limits / port mappings, `game_id` as-is). |
-| `GET /v3/games` | The games index as a JSON array, sorted by slug. |
+| `GET /v2/templates` | All templates in **v2** shape. Like v1 but uses `default_value` as the value key; `description` is truncated the same way. |
+| `GET /v3/templates` | Raw templates with variables intact (`{{...}}` not resolved), `description` untruncated, and all newer fields (annotations, host mounts, string-capable resource limits / port mappings, `game_id` as-is). |
+| `GET /v3/games` | The games index, sorted by slug. |
 
 Responses are wrapped in a top-level key: template endpoints return
 `{"templates": [...]}` and the games endpoint returns `{"games": [...]}`.
@@ -164,8 +172,11 @@ Responses are wrapped in a top-level key: template endpoints return
 │   └── templates/           # in-memory Service with background reload
 ├── k8s/                     # Kubernetes Deployment, Service, Ingress
 ├── config.yaml              # default runtime configuration
+├── .env.example             # documented environment variables (copy to .env)
 ├── Dockerfile               # multi-stage build → distroless runtime image
-└── .github/workflows/       # CI (build/test) and release (image publish)
+├── LICENSE                  # MIT
+└── .github/workflows/       # ci (build/test), release (image publish),
+                             # issue-redirect (closes issues → cosy repo)
 ```
 
 ### Available commands
@@ -221,7 +232,9 @@ first, and see the organization-wide guidelines in the
 [magenta-mause/.github](https://github.com/magenta-mause/.github) repository.
 
 - **Report a bug or request a feature:**
-  [open an issue](https://github.com/magenta-mause/Cosy-Template-Service/issues).
+  [open an issue in Magenta-Mause/cosy](https://github.com/magenta-mause/cosy/issues/new/choose)
+  — issues opened in this repository are automatically closed and redirected
+  there by [`issue-redirect.yml`](./.github/workflows/issue-redirect.yml).
 - **Development setup:** see [Getting Started](#getting-started) and
   [Development](#development) above.
 
@@ -232,6 +245,5 @@ Released under the [MIT License](./LICENSE).
 ## Contact / Support
 
 For questions, bug reports, or feature requests, use the
-[GitHub issue tracker](https://github.com/magenta-mause/Cosy-Template-Service/issues).
-Broader project discussion belongs in the main
-[Cosy](https://github.com/magenta-mause/Cosy) repository.
+[Cosy issue tracker](https://github.com/magenta-mause/cosy/issues) — all
+Cosy-project issues are collected in the main repository.
