@@ -4,22 +4,23 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8.svg?logo=go&logoColor=white)](./go.mod)
-[![CI](https://github.com/magenta-mause/Cosy-Template-Service/actions/workflows/ci.yml/badge.svg)](https://github.com/magenta-mause/Cosy-Template-Service/actions/workflows/ci.yml)
+[![CI](https://github.com/Magenta-Mause/Cosy-Template-Service/actions/workflows/ci.yml/badge.svg)](https://github.com/Magenta-Mause/Cosy-Template-Service/actions/workflows/ci.yml)
 
-Part of the [Cosy](https://github.com/magenta-mause/Cosy) project — a self-hostable game-server hosting and management platform.
+Part of the [Cosy](https://github.com/Magenta-Mause/Cosy) project — a self-hostable game-server hosting and management platform.
 
 ## Overview
 
 Cosy lets users deploy game servers from reusable **templates**. Those templates
 (and the games they belong to) live as YAML files in the
-[Cosy-Templates](https://github.com/magenta-mause/Cosy-Templates) repository so
+[Cosy-Templates](https://github.com/Magenta-Mause/Cosy-Templates) repository so
 they can be reviewed, versioned, and contributed to like any other source.
 
 Cosy-Template-Service is the bridge between that repository and the rest of the
 platform. It periodically pulls the template and game definitions straight from
 GitHub, keeps them in memory, and exposes them through a simple read-only HTTP
-API that the [Cosy-Backend](https://github.com/magenta-mause/Cosy-Backend) and
-frontend consume. This keeps template content decoupled from application
+API that the [Cosy-Backend](https://github.com/Magenta-Mause/Cosy-Backend)
+consumes — the frontend reaches this data through the backend, not by calling
+this service directly. This keeps template content decoupled from application
 deployments: publishing a new template is a commit to Cosy-Templates, not a
 redeploy of the platform.
 
@@ -43,16 +44,19 @@ redeploy of the platform.
 
 | Repository | Purpose |
 | --- | --- |
-| [Cosy](https://github.com/magenta-mause/Cosy) | Main project / platform umbrella |
-| [Cosy-Templates](https://github.com/magenta-mause/Cosy-Templates) | Source YAML templates and game definitions served by this service |
-| [Cosy-Backend](https://github.com/magenta-mause/Cosy-Backend) | Core platform backend that consumes this API |
-| [Cosy-Docs](https://github.com/magenta-mause/Cosy-Docs) | Project-wide documentation |
+| [Cosy](https://github.com/Magenta-Mause/Cosy) | Main project / platform umbrella |
+| [Cosy-Templates](https://github.com/Magenta-Mause/Cosy-Templates) | Source YAML templates and game definitions served by this service |
+| [Cosy-Backend](https://github.com/Magenta-Mause/Cosy-Backend) | Core platform backend — the only direct consumer of this API (`cosy.templates-api` in its `application.yaml`) |
+| [Cosy-Frontend](https://github.com/Magenta-Mause/Cosy-Frontend) | Web UI that surfaces these templates, via the backend |
+| [Cosy-Docs](https://github.com/Magenta-Mause/Cosy-Docs) | Project-wide documentation |
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Go 1.25.5+** (see [`go.mod`](./go.mod)) — required to build and run from source.
+- **Go 1.25.5+** (see [`go.mod`](./go.mod)) — required to build and run from source. CI builds with
+  the same version via `go-version-file: go.mod`; the `Dockerfile` builds the image with a newer
+  toolchain (`golang:1.26.5-alpine`), so a version mismatch between the two is expected, not a bug.
 - **Docker** (optional) — to build and run the container image.
 - **A GitHub personal access token** (optional) — only needed to raise API rate
   limits or read a private templates repository. The service runs without one.
@@ -62,7 +66,7 @@ redeploy of the platform.
 Clone the repository and build the binary:
 
 ```bash
-git clone https://github.com/magenta-mause/Cosy-Template-Service.git
+git clone https://github.com/Magenta-Mause/Cosy-Template-Service.git
 cd Cosy-Template-Service
 go build -o app ./cmd/templates-service
 ```
@@ -223,16 +227,19 @@ pushes the image via
 ## Documentation
 
 Project-wide documentation lives in
-[Cosy-Docs](https://github.com/magenta-mause/Cosy-Docs).
+[Cosy-Docs](https://github.com/Magenta-Mause/Cosy-Docs).
 
 ## Contributing
 
-Contributions are welcome! Please open an issue to discuss substantial changes
-first, and see the organization-wide guidelines in the
-[magenta-mause/.github](https://github.com/magenta-mause/.github) repository.
+Contributions are welcome! For substantial changes, open an issue in
+[Magenta-Mause/Cosy](https://github.com/Magenta-Mause/Cosy/issues/new/choose) to discuss it first —
+not here, for the reason below. Organization-wide guidelines will live in the
+[Magenta-Mause/.github](https://github.com/Magenta-Mause/.github) repository; a `CONTRIBUTING.md` has
+not landed there yet, so until it does, the [Development workflow](#development-workflow) below is the
+authoritative guide.
 
 - **Report a bug or request a feature:**
-  [open an issue in Magenta-Mause/cosy](https://github.com/magenta-mause/cosy/issues/new/choose)
+  [open an issue in Magenta-Mause/Cosy](https://github.com/Magenta-Mause/Cosy/issues/new/choose)
   — issues opened in this repository are automatically closed and redirected
   there by [`issue-redirect.yml`](./.github/workflows/issue-redirect.yml).
 - **Development setup:** see [Getting Started](#getting-started) and
@@ -245,5 +252,5 @@ Released under the [MIT License](./LICENSE).
 ## Contact / Support
 
 For questions, bug reports, or feature requests, use the
-[Cosy issue tracker](https://github.com/magenta-mause/cosy/issues) — all
+[Cosy issue tracker](https://github.com/Magenta-Mause/Cosy/issues) — all
 Cosy-project issues are collected in the main repository.
