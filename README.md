@@ -94,6 +94,7 @@ github:
   path: "templates"           # path prefix; every *.yaml below it, recursively
   gamesPath: "games"          # path prefix; every *.yaml below it, recursively
 port: 8080                     # HTTP port the service listens on
+metricsPort: 9090              # separate port serving Prometheus metrics
 ```
 
 **Environment variables:**
@@ -102,6 +103,7 @@ port: 8080                     # HTTP port the service listens on
 | --- | --- | --- |
 | `GITHUB_TOKEN` | No | GitHub token used to authenticate GitHub API calls. Without it the service uses an unauthenticated client with reduced rate limits. |
 | `PORT` | No | HTTP port to listen on. Overrides the `port` key in `config.yaml` (default `8080`). |
+| `METRICSPORT` | No | Port serving `/metrics`. Overrides the `metricsPort` key in `config.yaml` (default `9090`). |
 | `GIN_MODE` | No | Gin's run mode. The binary starts in `debug` mode; set `release` in production to silence per-request debug logging. |
 
 Copy [`.env.example`](./.env.example) to `.env` and fill in a token if you need
@@ -156,9 +158,22 @@ origins (`GET`, `OPTIONS`).
 | `GET /v2/templates` | All templates in **v2** shape. Like v1 but uses `default_value` as the value key; `description` is truncated the same way. |
 | `GET /v3/templates` | Raw templates with variables intact (`{{...}}` not resolved), `description` untruncated, and all newer fields (annotations, host mounts, string-capable resource limits / port mappings, `game_id` as-is). |
 | `GET /v3/games` | The games index, sorted by slug. |
+| `GET /healthz` | Health check, returns `200` with an empty body. |
 
 Responses are wrapped in a top-level key: template endpoints return
 `{"templates": [...]}` and the games endpoint returns `{"games": [...]}`.
+
+### Usage metrics
+
+To decide when an old API version can be retired, the service counts its
+callers. The metrics are served in the Prometheus format on a separate port
+(`metricsPort`, default `9090`) at `/metrics`, so the public port never exposes
+them.
+
+| Metric | Description |
+| --- | --- |
+| `cosy_template_service_http_requests_total{route, status}` | Requests per route and status code. Requests that match no route share `route="unmatched"`. Kubernetes probes and `/healthz` are not counted. |
+| `cosy_template_service_unique_clients{route, window}` | Distinct callers per route in the last `1d`, `7d` and `30d`. Callers are told apart by a hash of their address that is seeded per process; the address itself is neither stored nor exported. The count is held in memory and starts from zero after a restart. |
 
 ## Development
 

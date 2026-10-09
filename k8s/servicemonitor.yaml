@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cosy-template-service
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: cosy-template-service
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 60s

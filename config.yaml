@@ -5,3 +5,4 @@ github:
   path: "templates"
   gamesPath: "games"
 port: 8080
+metricsPort: 9090

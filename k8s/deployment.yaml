@@ -17,6 +17,9 @@ spec:
           image: ghcr.io/magenta-mause/cosy-template-service:v3.0.1
           ports:
             - containerPort: 8080
+              name: http
+            - containerPort: 9090
+              name: metrics
           env:
             - name: GITHUB_TOKEN
               valueFrom:
