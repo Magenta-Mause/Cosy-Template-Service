@@ -94,7 +94,6 @@ github:
   path: "templates"           # path prefix; every *.yaml below it, recursively
   gamesPath: "games"          # path prefix; every *.yaml below it, recursively
 port: 8080                     # HTTP port the service listens on
-metricsPort: 9090              # separate port serving Prometheus metrics
 ```
 
 **Environment variables:**
@@ -103,7 +102,7 @@ metricsPort: 9090              # separate port serving Prometheus metrics
 | --- | --- | --- |
 | `GITHUB_TOKEN` | No | GitHub token used to authenticate GitHub API calls. Without it the service uses an unauthenticated client with reduced rate limits. |
 | `PORT` | No | HTTP port to listen on. Overrides the `port` key in `config.yaml` (default `8080`). |
-| `METRICSPORT` | No | Port serving `/metrics`. Overrides the `metricsPort` key in `config.yaml` (default `9090`). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | No | OTLP/HTTP endpoint the [usage metrics](#usage-metrics) are pushed to, e.g. `http://localhost:4318`. Without it no metrics are exported. The other standard `OTEL_*` variables (`OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_METRIC_EXPORT_INTERVAL`, ...) apply as well. |
 | `GIN_MODE` | No | Gin's run mode. The binary starts in `debug` mode; set `release` in production to silence per-request debug logging. |
 
 Copy [`.env.example`](./.env.example) to `.env` and fill in a token if you need
@@ -166,13 +165,12 @@ Responses are wrapped in a top-level key: template endpoints return
 ### Usage metrics
 
 To decide when an old API version can be retired, the service counts its
-callers. The metrics are served in the Prometheus format on a separate port
-(`metricsPort`, default `9090`) at `/metrics`, so the public port never exposes
-them.
+callers and pushes the result over OTLP/HTTP (OpenTelemetry) to the endpoint in
+`OTEL_EXPORTER_OTLP_ENDPOINT`. Nothing is exported while that variable is unset.
 
 | Metric | Description |
 | --- | --- |
-| `cosy_template_service_http_requests_total{route, status}` | Requests per route and status code. Requests that match no route share `route="unmatched"`. Kubernetes probes and `/healthz` are not counted. |
+| `cosy_template_service_http_requests{route, status}` | Counter of requests per route and status code. Requests that match no route share `route="unmatched"`. Kubernetes probes and `/healthz` are not counted. Prometheus-compatible backends store it as `cosy_template_service_http_requests_total`. |
 | `cosy_template_service_unique_clients{route, window}` | Distinct callers per route in the last `1d`, `7d` and `30d`. Callers are told apart by a hash of their address that is seeded per process; the address itself is neither stored nor exported. The count is held in memory and starts from zero after a restart. |
 
 ## Development

@@ -31,7 +31,7 @@ COPY --from=builder /app/app /app/app
 # Use non-root user (distroless default)
 USER nonroot:nonroot
 
-EXPOSE 8080 9090
+EXPOSE 8080
 
 # Copy config.yaml
 COPY config.yaml .

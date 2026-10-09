@@ -4,21 +4,29 @@
 package metrics
 
 import (
+	"context"
 	"hash/maphash"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 const (
 	// HealthPath is excluded from the usage metrics.
 	HealthPath = "/healthz"
+
+	serviceName = "cosy-template-service"
 
 	// unmatchedRoute groups every request that hit no registered route, so
 	// scanners probing random paths cannot create one series per path.
@@ -38,16 +46,9 @@ var clientWindows = []struct {
 	{"30d", 30 * 24 * time.Hour},
 }
 
-var uniqueClientsDesc = prometheus.NewDesc(
-	"cosy_template_service_unique_clients",
-	"Distinct callers per route within the look-back window. Counted in memory, so it starts from zero after a restart.",
-	[]string{"route", "window"}, nil,
-)
-
-// Recorder collects the usage metrics and serves them.
+// Recorder collects the usage metrics.
 type Recorder struct {
-	registry *prometheus.Registry
-	requests *prometheus.CounterVec
+	requests metric.Int64Counter
 
 	mu sync.Mutex
 	// seed is random per process: caller addresses are only ever held as a
@@ -57,19 +58,60 @@ type Recorder struct {
 	now      func() time.Time
 }
 
-func New() *Recorder {
+// Start returns a Recorder that pushes its metrics over OTLP/HTTP. The
+// exporter is configured through the standard OTEL_EXPORTER_OTLP_* environment
+// variables; without an endpoint nothing is exported.
+func Start(ctx context.Context) (*Recorder, error) {
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" && os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT") == "" {
+		return New(noop.NewMeterProvider().Meter(serviceName))
+	}
+
+	exporter, err := otlpmetrichttp.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// OTEL_SERVICE_NAME and OTEL_RESOURCE_ATTRIBUTES take precedence over the
+	// default service name.
+	res, err := resource.New(ctx,
+		resource.WithAttributes(attribute.String("service.name", serviceName)),
+		resource.WithFromEnv(),
+		resource.WithTelemetrySDK(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter)),
+	)
+	return New(provider.Meter(serviceName))
+}
+
+// New returns a Recorder that reports through the given meter.
+func New(meter metric.Meter) (*Recorder, error) {
 	r := &Recorder{
-		registry: prometheus.NewRegistry(),
-		requests: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "cosy_template_service_http_requests_total",
-			Help: "HTTP requests by route and status code. Kubernetes probes are not counted.",
-		}, []string{"route", "status"}),
 		seed:     maphash.MakeSeed(),
 		lastSeen: make(map[string]map[uint64]time.Time),
 		now:      time.Now,
 	}
-	r.registry.MustRegister(r.requests, r)
-	return r
+
+	var err error
+	r.requests, err = meter.Int64Counter(
+		"cosy_template_service_http_requests",
+		metric.WithDescription("HTTP requests by route and status code. Kubernetes probes are not counted."),
+	)
+	if err != nil {
+		return nil, err
+	}
+	_, err = meter.Int64ObservableGauge(
+		"cosy_template_service_unique_clients",
+		metric.WithDescription("Distinct callers per route within the look-back window. Counted in memory, so it starts from zero after a restart."),
+		metric.WithInt64Callback(r.observeUniqueClients),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // Track makes the given routes report zero from the start, so a route nobody
@@ -82,7 +124,7 @@ func (r *Recorder) Track(routes ...string) {
 		if route == HealthPath {
 			continue
 		}
-		r.requests.WithLabelValues(route, strconv.Itoa(http.StatusOK))
+		r.requests.Add(context.Background(), 0, requestAttributes(route, http.StatusOK))
 		if r.lastSeen[route] == nil {
 			r.lastSeen[route] = make(map[uint64]time.Time)
 		}
@@ -104,16 +146,18 @@ func (r *Recorder) Middleware() gin.HandlerFunc {
 		if route == "" {
 			route = unmatchedRoute
 		}
-		r.requests.WithLabelValues(route, strconv.Itoa(c.Writer.Status())).Inc()
+		r.requests.Add(c.Request.Context(), 1, requestAttributes(route, c.Writer.Status()))
 		if route != unmatchedRoute {
 			r.seen(route, c.ClientIP())
 		}
 	}
 }
 
-// Handler serves the metrics in the Prometheus text format.
-func (r *Recorder) Handler() http.Handler {
-	return promhttp.HandlerFor(r.registry, promhttp.HandlerOpts{})
+func requestAttributes(route string, status int) metric.MeasurementOption {
+	return metric.WithAttributes(
+		attribute.String("route", route),
+		attribute.String("status", strconv.Itoa(status)),
+	)
 }
 
 func (r *Recorder) seen(route, client string) {
@@ -147,13 +191,7 @@ func (r *Recorder) prune(clients map[uint64]time.Time, now time.Time) {
 	}
 }
 
-// Describe implements prometheus.Collector.
-func (r *Recorder) Describe(ch chan<- *prometheus.Desc) {
-	ch <- uniqueClientsDesc
-}
-
-// Collect implements prometheus.Collector.
-func (r *Recorder) Collect(ch chan<- prometheus.Metric) {
+func (r *Recorder) observeUniqueClients(_ context.Context, observer metric.Int64Observer) error {
 	now := r.now()
 
 	r.mu.Lock()
@@ -163,15 +201,17 @@ func (r *Recorder) Collect(ch chan<- prometheus.Metric) {
 		r.prune(clients, now)
 		for _, window := range clientWindows {
 			since := now.Add(-window.duration)
-			count := 0
+			var count int64
 			for _, last := range clients {
 				if !last.Before(since) {
 					count++
 				}
 			}
-			ch <- prometheus.MustNewConstMetric(
-				uniqueClientsDesc, prometheus.GaugeValue, float64(count), route, window.label,
-			)
+			observer.Observe(count, metric.WithAttributes(
+				attribute.String("route", route),
+				attribute.String("window", window.label),
+			))
 		}
 	}
+	return nil
 }

@@ -5,9 +5,8 @@ import (
 )
 
 type Config struct {
-	Port        int `mapstructure:"port"`
-	MetricsPort int `mapstructure:"metricsPort"` // Prometheus metrics, kept off the public port
-	Github      struct {
+	Port   int `mapstructure:"port"`
+	Github struct {
 		Owner     string `mapstructure:"owner"`
 		Repo      string `mapstructure:"repo"`
 		Ref       string `mapstructure:"ref"`       // "main"
@@ -24,7 +23,6 @@ func Load() *Config {
 	viper.AutomaticEnv() // GITHUB_OWNER etc.
 	viper.BindEnv("github.token", "GITHUB_TOKEN")
 	viper.SetDefault("github.gamesPath", "games")
-	viper.SetDefault("metricsPort", 9090)
 	viper.ReadInConfig() // Optional file
 
 	var cfg Config

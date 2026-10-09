@@ -1,9 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -23,7 +23,10 @@ func main() {
 	client := githubclient.New(cfg)
 	ts := templates.New(client)
 
-	usage := metrics.New()
+	usage, err := metrics.Start(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to set up usage metrics: %v", err)
+	}
 
 	r := gin.Default()
 	r.Use(usage.Middleware())
@@ -41,13 +44,6 @@ func main() {
 	for _, route := range r.Routes() {
 		usage.Track(route.Path)
 	}
-
-	// Metrics get their own port so the public ingress never exposes them.
-	go func() {
-		mux := http.NewServeMux()
-		mux.Handle("/metrics", usage.Handler())
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.MetricsPort), mux))
-	}()
 
 	log.Fatal(r.Run(fmt.Sprintf(":%d", cfg.Port)))
 }
