@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: cosy-template-service
-          image: ghcr.io/magenta-mause/cosy-template-service:v3.0.1
+          image: ghcr.io/magenta-mause/cosy-template-service:v3.1.0
           ports:
             - containerPort: 8080
           env:
@@ -35,13 +35,13 @@ spec:
               value: service.namespace=cosy,service.instance.id=$(POD_NAME),deployment.environment=production
           livenessProbe:
             httpGet:
-              path: /templates
+              path: /healthz
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
           readinessProbe:
             httpGet:
-              path: /templates
+              path: /healthz
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
