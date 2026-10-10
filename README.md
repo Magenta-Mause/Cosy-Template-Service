@@ -165,13 +165,15 @@ Responses are wrapped in a top-level key: template endpoints return
 ### Usage metrics
 
 To decide when an old API version can be retired, the service counts its
-callers and pushes the result over OTLP/HTTP (OpenTelemetry) to the endpoint in
+requests and pushes the result over OTLP/HTTP (OpenTelemetry) to the endpoint in
 `OTEL_EXPORTER_OTLP_ENDPOINT`. Nothing is exported while that variable is unset.
 
 | Metric | Description |
 | --- | --- |
-| `cosy_template_service_http_requests{route, status}` | Counter of requests per route and status code. Requests that match no route share `route="unmatched"`. Kubernetes probes and `/healthz` are not counted. Prometheus-compatible backends store it as `cosy_template_service_http_requests_total`. |
-| `cosy_template_service_unique_clients{route, window}` | Distinct callers per route in the last `1d`, `7d` and `30d`. Callers are told apart by a hash of their address that is seeded per process; the address itself is neither stored nor exported. The count is held in memory and starts from zero after a restart. |
+| `cosy_template_service_http_requests{route, status}` | Counter of requests per route and status code. Requests that match no route share `route="unmatched"`. Kubernetes probes, CORS preflights and `/healthz` are not counted. Prometheus-compatible backends store it as `cosy_template_service_http_requests_total`. |
+
+The number of distinct callers is not a metric. It can be read from the request
+log, which carries the caller address of every request.
 
 ## Development
 

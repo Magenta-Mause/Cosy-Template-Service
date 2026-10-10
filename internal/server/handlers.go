@@ -4,10 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/magenta-mause/cosy-template-service/internal/metrics"
 	"github.com/magenta-mause/cosy-template-service/internal/models"
 	"github.com/magenta-mause/cosy-template-service/internal/templates"
 )
+
+// HealthPath answers 200 without touching the template data.
+const HealthPath = "/healthz"
 
 func RegisterRoutes(r *gin.Engine, ts *templates.Service) {
 	r.GET("/templates", getTemplatesV1(ts))
@@ -15,7 +17,7 @@ func RegisterRoutes(r *gin.Engine, ts *templates.Service) {
 	r.GET("/v2/templates", getTemplatesV2(ts))
 	r.GET("/v3/templates", getTemplatesV3(ts))
 	r.GET("/v3/games", getGamesV3(ts))
-	r.GET(metrics.HealthPath, func(c *gin.Context) { c.Status(http.StatusOK) })
+	r.GET(HealthPath, func(c *gin.Context) { c.Status(http.StatusOK) })
 }
 
 // getTemplatesV1 responds with all templates using "default" as the JSON key.
