@@ -102,6 +102,7 @@ port: 8080                     # HTTP port the service listens on
 | --- | --- | --- |
 | `GITHUB_TOKEN` | No | GitHub token used to authenticate GitHub API calls. Without it the service uses an unauthenticated client with reduced rate limits. |
 | `PORT` | No | HTTP port to listen on. Overrides the `port` key in `config.yaml` (default `8080`). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | No | OTLP/HTTP endpoint the [usage metrics](#usage-metrics) are pushed to, e.g. `http://localhost:4318`. Without it no metrics are exported. The other standard `OTEL_*` variables (`OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_METRIC_EXPORT_INTERVAL`, ...) apply as well. |
 | `GIN_MODE` | No | Gin's run mode. The binary starts in `debug` mode; set `release` in production to silence per-request debug logging. |
 
 Copy [`.env.example`](./.env.example) to `.env` and fill in a token if you need
@@ -156,9 +157,23 @@ origins (`GET`, `OPTIONS`).
 | `GET /v2/templates` | All templates in **v2** shape. Like v1 but uses `default_value` as the value key; `description` is truncated the same way. |
 | `GET /v3/templates` | Raw templates with variables intact (`{{...}}` not resolved), `description` untruncated, and all newer fields (annotations, host mounts, string-capable resource limits / port mappings, `game_id` as-is). |
 | `GET /v3/games` | The games index, sorted by slug. |
+| `GET /healthz` | Health check, returns `200` with an empty body. |
 
 Responses are wrapped in a top-level key: template endpoints return
 `{"templates": [...]}` and the games endpoint returns `{"games": [...]}`.
+
+### Usage metrics
+
+To decide when an old API version can be retired, the service counts its
+requests and pushes the result over OTLP/HTTP (OpenTelemetry) to the endpoint in
+`OTEL_EXPORTER_OTLP_ENDPOINT`. Nothing is exported while that variable is unset.
+
+| Metric | Description |
+| --- | --- |
+| `cosy_template_service_http_requests{route, status}` | Counter of requests per route and status code. Requests that match no route share `route="unmatched"`. Kubernetes probes, CORS preflights and `/healthz` are not counted. Prometheus-compatible backends store it as `cosy_template_service_http_requests_total`. |
+
+The number of distinct callers is not a metric. It can be read from the request
+log, which carries the caller address of every request.
 
 ## Development
 

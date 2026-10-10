@@ -23,6 +23,16 @@ spec:
                 secretKeyRef:
                   name: cosy-template-service
                   key: cosy-template-service-github-token
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://grafana-k8s-monitoring-alloy-receiver.observability.svc.cluster.local:4318
+            - name: OTEL_SERVICE_NAME
+              value: cosy-template-service
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.namespace=cosy,service.instance.id=$(POD_NAME),deployment.environment=production
           livenessProbe:
             httpGet:
               path: /templates
